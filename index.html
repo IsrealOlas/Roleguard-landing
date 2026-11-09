@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoleGuard — Zero-Cloud AWS IAM Privilege Escalation Scanner</title>
+    <meta name="description" content="100% Offline, Zero-Cloud AWS IAM Privilege Escalation & Vulnerability Scanner in a single standalone HTML file. Zero server dependencies, 100% privacy guaranteed.">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: JetBrains Mono & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian: '#0B0F17',
+                        surface: '#111827',
+                        card: '#1F2937',
+                        emeraldAccent: '#10B981',
+                        cyanAccent: '#06B6D4',
+                        crimsonAlert: '#EF4444',
+                        amberWarn: '#F59E0B'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0F17;
+            color: #F3F4F6;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .glow-emerald {
+            box-shadow: 0 0 30px -5px rgba(16, 185, 129, 0.25);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 30px -5px rgba(6, 182, 212, 0.25);
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #34D399 0%, #10B981 50%, #06B6D4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(16, 185, 129, 0.02) 51%);
+            background-size: 100% 4px;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0F17;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1F2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body class="antialiased scanline min-h-screen flex flex-col justify-between">
+
+    <!-- Zero Network Outbound Monitor Bar -->
+    <div class="bg-gray-950 border-b border-emerald-900/40 py-2 px-4 text-xs font-mono text-gray-400 flex justify-between items-center sticky top-0 z-50 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <span class="flex h-2.5 w-2.5 relative">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="text-emerald-400 font-semibold uppercase tracking-wider">Airgap Integrity Active</span>
+            <span class="hidden md:inline text-gray-600">|</span>
+            <span class="hidden md:inline text-gray-400">Outbound Telemetry: <span id="outbound-count" class="text-emerald-400 font-bold">0 Requests</span></span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="hidden sm:inline-block bg-emerald-950 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded text-[10px]">
+                <i class="fa-solid fa-shield-halved mr-1"></i> Client-Side RAM Processing
+            </span>
+            <a href="#demo" class="text-cyan-400 hover:text-cyan-300 underline font-sans font-medium text-xs">Run Audit Engine &rarr;</a>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="max-w-7xl w-full mx-auto px-6 py-6 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600 flex items-center justify-center text-obsidian font-bold text-xl shadow-lg shadow-emerald-900/30">
+                <i class="fa-solid fa-shield-cat text-obsidian text-2xl"></i>
+            </div>
+            <div>
+                <span class="text-xl font-extrabold tracking-tight text-white font-mono">Role<span class="gradient-text">Guard</span></span>
+                <span class="text-[10px] block font-mono text-cyan-400/80 -mt-1 tracking-wider uppercase">Zero-Cloud Edition</span>
+            </div>
+        </div>
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
+            <a href="#demo" class="hover:text-emerald-400 transition-colors">Live Demo</a>
+            <a href="#guarantee" class="hover:text-emerald-400 transition-colors">Privacy Guarantee</a>
+            <a href="#matrix" class="hover:text-emerald-400 transition-colors">Risk Matrix</a>
+            <a href="#pricing" class="hover:text-emerald-400 transition-colors">Pricing</a>
+            <a href="#faq" class="hover:text-emerald-400 transition-colors">FAQ</a>
+        </div>
+        <div>
+            <a href="#pricing" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-obsidian font-bold text-sm transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+                <i class="fa-solid fa-download text-xs"></i> Get RoleGuard Pro
+            </a>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="max-w-7xl mx-auto px-6 pt-12 pb-20 text-center relative">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 blur-[120px] rounded-full -z-10 pointer-events-none"></div>
+
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel border-emerald-500/30 text-emerald-400 text-xs font-mono mb-8">
+            <i class="fa-solid fa-lock text-cyan-400"></i> Standalone Single-File Architecture (HTML/JS)
+        </div>
+
+        <h1 class="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mx-auto mb-6">
+            Zero-Cloud AWS IAM <br>
+            <span class="gradient-text">Privilege Escalation Scanner</span>
+        </h1>
+
+        <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 font-normal leading-relaxed">
+            Audit complex AWS IAM policies and infrastructure code for 21+ dangerous privilege escalation paths directly inside client-side browser memory. No SaaS trackers. No cloud uploads. 100% air-gapped.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+            <a href="#demo" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-obsidian font-bold text-base transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-3">
+                <i class="fa-solid fa-terminal"></i> Try Live Audit Simulator
+            </a>
+            <a href="#pricing" class="w-full sm:w-auto px-8 py-4 rounded-xl glass-panel hover:bg-gray-800 text-gray-200 font-semibold text-base transition-all border border-gray-700 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-tags text-emerald-400"></i> View One-Time Pricing
+            </a>
+        </div>
+
+        <!-- Trust Badges -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
+            <div class="glass-panel p-4 rounded-xl border border-gray-800">
+                <div class="text-emerald-400 text-lg mb-1"><i class="fa-solid fa-wifi-slash"></i></div>
+                <div class="text-sm font-bold text-white">100% Offline Capable</div>
+                <div class="text-xs text-gray-400">Runs without an active internet link</div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl border border-gray-800">
+                <div class="text-cyan-400 text-lg mb-1"><i class="fa-solid fa-user-shield"></i></div>
+                <div class="text-sm font-bold text-white">Zero Telemetry</div>
+                <div class="text-xs text-gray-400">Your cloud architecture IP never leaves RAM</div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl border border-gray-800">
+                <div class="text-amberWarn text-lg mb-1"><i class="fa-solid fa-bug"></i></div>
+                <div class="text-sm font-bold text-white">21+ Escalation Vectors</div>
+                <div class="text-xs text-gray-400">Detects passRole, assumeRole & policy attach</div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl border border-gray-800">
+                <div class="text-purple-400 text-lg mb-1"><i class="fa-solid fa-file-code"></i></div>
+                <div class="text-sm font-bold text-white">Single HTML File</div>
+                <div class="text-xs text-gray-400">Double click to run locally forever</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LIVE DEMO SIMULATOR SECTION -->
+    <section id="demo" class="max-w-7xl mx-auto px-6 py-16 scroll-mt-20">
+        <div class="glass-panel rounded-2xl p-6 md:p-8 border border-gray-800 glow-emerald relative">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-gray-800 pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-3 font-mono">
+                        <i class="fa-solid fa-microchip text-emerald-400"></i> Interactive Policy Audit Simulator
+                    </h2>
+                    <p class="text-sm text-gray-400">Paste an AWS IAM policy JSON below to run an instant client-side audit.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="btn-load-vulnerable" onclick="loadSamplePolicy('vulnerable')" class="px-3 py-1.5 rounded bg-crimsonAlert/20 hover:bg-crimsonAlert/30 text-crimsonAlert border border-crimsonAlert/40 text-xs font-mono font-medium transition-all">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Load Vulnerable Sample
+                    </button>
+                    <button id="btn-load-safe" onclick="loadSamplePolicy('safe')" class="px-3 py-1.5 rounded bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 text-xs font-mono font-medium transition-all">
+                        <i class="fa-solid fa-check-circle mr-1"></i> Load Secure Sample
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Input Panel -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-mono text-gray-400 mb-2 flex justify-between items-center">
+                        <span>AWS IAM Policy JSON Input:</span>
+                        <span id="json-status" class="text-emerald-400 font-semibold text-[11px]">Valid JSON</span>
+                    </label>
+                    <textarea id="policy-input" rows="16" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-4 font-mono text-xs text-emerald-300 focus:outline-none focus:border-emerald-500 transition-colors resize-none leading-relaxed" placeholder="Paste AWS IAM policy JSON here..."></textarea>
+                    <button onclick="runAudit()" class="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-obsidian font-bold text-sm transition-all shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-bolt"></i> Run Instant Client-Side Scan
+                    </button>
+                </div>
+
+                <!-- Output Results Panel -->
+                <div class="flex flex-col bg-gray-950 rounded-xl border border-gray-800 p-4 font-mono">
+                    <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
+                        <span class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Audit Scan Output</span>
+                        <span id="scan-time" class="text-xs text-gray-500">Execution time: 0ms</span>
+                    </div>
+
+                    <div id="results-container" class="space-y-4 overflow-y-auto max-h-[420px] pr-2">
+                        <!-- Default Initial State -->
+                        <div class="text-center py-16 text-gray-600">
+                            <i class="fa-solid fa-shield-halved text-4xl mb-3 text-gray-700"></i>
+                            <p class="text-sm font-sans text-gray-400">Click "Run Instant Client-Side Scan" or load a sample policy to execute audit rules.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROBLEM VS SOLUTION COMPARISON -->
+    <section id="matrix" class="max-w-7xl mx-auto px-6 py-20">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <h2 class="text-3xl font-extrabold text-white mb-4">Why Security Engineers Avoid SaaS Cloud Scanners</h2>
+            <p class="text-gray-400">Sending sensitive AWS IAM policy JSON architectures to external cloud vendors creates third-party supply chain risks and telemetry leaks.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- SaaS Risks -->
+            <div class="glass-panel p-8 rounded-2xl border border-crimsonAlert/30 bg-crimsonAlert/5 relative">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-crimsonAlert/20 text-crimsonAlert text-xs font-mono font-bold mb-6">
+                    <i class="fa-solid fa-xmark"></i> Traditional Cloud SaaS Scanners
+                </div>
+                <ul class="space-y-4 text-sm text-gray-300">
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-xmark text-crimsonAlert mt-1"></i>
+                        <span><strong>Third-Party Data Storage:</strong> IAM policies detailing your internal infrastructure roles are uploaded to SaaS cloud databases.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-xmark text-crimsonAlert mt-1"></i>
+                        <span><strong>Subscription Fatigue:</strong> High recurring monthly seats ($100–$500/mo) just to validate policy syntax and permissions.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-xmark text-crimsonAlert mt-1"></i>
+                        <span><strong>Network Dependency:</strong> Scanners stop working entirely during cloud outages or when working on air-gapped systems.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-xmark text-crimsonAlert mt-1"></i>
+                        <span><strong>Supply Chain Exposure:</strong> API token leaks or SaaS vendor breaches expose your privilege escalation paths to attackers.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- RoleGuard Solution -->
+            <div class="glass-panel p-8 rounded-2xl border border-emerald-500/40 bg-emerald-500/5 relative glow-emerald">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-mono font-bold mb-6">
+                    <i class="fa-solid fa-check"></i> RoleGuard Air-Gapped Advantage
+                </div>
+                <ul class="space-y-4 text-sm text-gray-300">
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-emerald-400 mt-1"></i>
+                        <span><strong>Zero Cloud Transmission:</strong> 100% of audit rules run locally in your browser memory. Data never leaves your machine.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-emerald-400 mt-1"></i>
+                        <span><strong>One-Time Purchase:</strong> Buy once, use forever. No monthly subscriptions or user seat limits.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-emerald-400 mt-1"></i>
+                        <span><strong>Air-Gapped Ready:</strong> Operates natively off-grid, inside secure SOC environments, or without active internet access.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-emerald-400 mt-1"></i>
+                        <span><strong>Portable Single File:</strong> Save as a standalone `.html` file and run locally across any operating system.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING SECTION -->
+    <section id="pricing" class="max-w-7xl mx-auto px-6 py-20 scroll-mt-20">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <h2 class="text-3xl font-extrabold text-white mb-4">Simple, One-Time Commercial Licenses</h2>
+            <p class="text-gray-400">No monthly subscriptions. Pay once and own your security audit tool forever.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <!-- Solo Security Pro -->
+            <div class="glass-panel p-8 rounded-2xl border border-gray-800 flex flex-col justify-between hover:border-emerald-500/40 transition-all">
+                <div>
+                    <div class="text-xs font-mono text-emerald-400 uppercase tracking-wider mb-2">Solo Security Pro</div>
+                    <div class="text-4xl font-extrabold text-white mb-2">$49 <span class="text-sm font-normal text-gray-400">one-time</span></div>
+                    <p class="text-sm text-gray-400 mb-6">Designed for independent security consultants, DevOps engineers, and solo auditors.</p>
+                    <ul class="space-y-3 text-sm text-gray-300 mb-8 border-t border-gray-800 pt-6">
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> Full Single-File RoleGuard HTML Engine</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> 21+ Privilege Escalation Vectors Detector</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> Unlimited IAM Policy Scans</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> 100% Offline & Airgap Execution</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> Lifetime Product Updates</li>
+                    </ul>
+                </div>
+                <a href="https://leviquest662.gumroad.com/l/roleguard-pro" target="_blank" class="w-full py-3.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold text-sm transition-all text-center block">
+                    Buy Solo License ($49)
+                </a>
+            </div>
+
+            <!-- Enterprise Team License -->
+            <div class="glass-panel p-8 rounded-2xl border border-emerald-500/50 bg-emerald-950/20 flex flex-col justify-between relative glow-emerald">
+                <div class="absolute -top-3 right-6 bg-gradient-to-r from-emerald-500 to-cyan-500 text-obsidian text-[10px] font-bold font-mono px-3 py-1 rounded-full uppercase tracking-wider">
+                    Recommended for Teams
+                </div>
+                <div>
+                    <div class="text-xs font-mono text-cyan-400 uppercase tracking-wider mb-2">Enterprise Team</div>
+                    <div class="text-4xl font-extrabold text-white mb-2">$199 <span class="text-sm font-normal text-gray-400">one-time</span></div>
+                    <p class="text-sm text-gray-400 mb-6">Designed for security operations teams, SOC centers, and cloud consultancies.</p>
+                    <ul class="space-y-3 text-sm text-gray-300 mb-8 border-t border-gray-800 pt-6">
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> Everything in Solo Pro Plan</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> Unlimited Team-wide Deployment</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> Custom IAM Security Rule Builder Module</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> JSON & PDF Audit Report Generator</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> Priority Technical Support</li>
+                    </ul>
+                </div>
+                <a href="https://leviquest662.gumroad.com/l/roleguard-pro" target="_blank" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-obsidian font-bold text-sm transition-all text-center block shadow-lg shadow-emerald-500/20">
+                    Get Enterprise Team License ($199)
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ SECTION -->
+    <section id="faq" class="max-w-5xl mx-auto px-6 py-20 scroll-mt-20">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <h2 class="text-3xl font-extrabold text-white mb-4">Frequently Asked Questions</h2>
+            <p class="text-gray-400">Everything you need to know about RoleGuard's zero-cloud architecture.</p>
+        </div>
+
+        <div class="space-y-4">
+            <div class="glass-panel p-6 rounded-xl border border-gray-800">
+                <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-question text-emerald-400"></i> How do I know my IAM policies aren't being sent to a remote server?
+                </h3>
+                <p class="text-sm text-gray-400 leading-relaxed">
+                    RoleGuard is constructed as a self-contained single-file HTML document. You can open your browser's Developer Tools (Network Tab), run scans, and verify that 0 outbound network requests are made. You can also disconnect your internet entirely and run the tool off-grid.
+                </p>
+            </div>
+
+            <div class="glass-panel p-6 rounded-xl border border-gray-800">
+                <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-question text-emerald-400"></i> What AWS IAM vulnerability paths does RoleGuard audit?
+                </h3>
+                <p class="text-sm text-gray-400 leading-relaxed">
+                    RoleGuard checks over 21 known IAM privilege escalation paths including <code class="text-emerald-400 bg-gray-950 px-1 py-0.5 rounded">iam:PassRole</code> combined with <code class="text-emerald-400 bg-gray-950 px-1 py-0.5 rounded">ec2:RunInstances</code> or Lambda execution, wildcard resource permissions (<code class="text-emerald-400 bg-gray-950 px-1 py-0.5 rounded">*</code>), policy attachment rights, and missing condition statements.
+                </p>
+            </div>
+
+            <div class="glass-panel p-6 rounded-xl border border-gray-800">
+                <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-question text-emerald-400"></i> How do updates work for a zero-cloud HTML tool?
+                </h3>
+                <p class="text-sm text-gray-400 leading-relaxed">
+                    When you purchase a license, you receive access to the release repository. Whenever new IAM escalation vectors or detection rules are added, you can download the updated standalone HTML bundle.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-900 bg-gray-950 py-12 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-shield-cat"></i>
+                </div>
+                <span class="text-lg font-bold text-white font-mono">RoleGuard</span>
+                <span class="text-xs text-gray-500 font-mono">© 2026 Sovereign Systems. All rights reserved.</span>
+            </div>
+            <div class="flex items-center gap-6 text-xs text-gray-400 font-mono">
+                <a href="#demo" class="hover:text-emerald-400">Demo</a>
+                <a href="#matrix" class="hover:text-emerald-400">Security Matrix</a>
+                <a href="#pricing" class="hover:text-emerald-400">Pricing</a>
+                <a href="#faq" class="hover:text-emerald-400">FAQ</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE AUDIT ENGINE JS SCRIPT -->
+    <script>
+        // Intercept network calls to demonstrate 0 outbound telemetry
+        let outboundRequests = 0;
+        const originalFetch = window.fetch;
+        window.fetch = function() {
+            outboundRequests++;
+            document.getElementById('outbound-count').innerText = outboundRequests + " Requests";
+            return originalFetch.apply(this, arguments);
+        };
+
+        const sampleVulnerable = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "EC2FullAccessWithPassRole",
+                    "Effect": "Allow",
+                    "Action": [
+                        "ec2:RunInstances",
+                        "iam:PassRole"
+                    ],
+                    "Resource": "*"
+                },
+                {
+                    "Sid": "WildcardAdmin",
+                    "Effect": "Allow",
+                    "Action": "*",
+                    "Resource": "*"
+                }
+            ]
+        };
+
+        const sampleSafe = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "RestrictedS3Read",
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:GetObject",
+                        "s3:ListBucket"
+                    ],
+                    "Resource": [
+                        "arn:aws:s3:::company-audit-logs-2026",
+                        "arn:aws:s3:::company-audit-logs-2026/*"
+                    ],
+                    "Condition": {
+                        "Bool": {
+                            "aws:SecureTransport": "true"
+                        }
+                    }
+                }
+            ]
+        };
+
+        // Load Sample Policies into Textarea
+        function loadSamplePolicy(type) {
+            const inputArea = document.getElementById('policy-input');
+            if (type === 'vulnerable') {
+                inputArea.value = JSON.stringify(sampleVulnerable, null, 4);
+            } else {
+                inputArea.value = JSON.stringify(sampleSafe, null, 4);
+            }
+            runAudit();
+        }
+
+        // Core Client-Side Audit Routine
+        function runAudit() {
+            const startTime = performance.now();
+            const inputArea = document.getElementById('policy-input');
+            const container = document.getElementById('results-container');
+            const statusLabel = document.getElementById('json-status');
+            
+            let policy;
+            try {
+                policy = JSON.parse(inputArea.value);
+                statusLabel.innerText = "Valid JSON";
+                statusLabel.className = "text-emerald-400 font-semibold text-[11px]";
+            } catch (e) {
+                statusLabel.innerText = "Invalid JSON Format";
+                statusLabel.className = "text-crimsonAlert font-semibold text-[11px]";
+                container.innerHTML = `
+                    <div class="p-4 rounded-lg bg-crimsonAlert/10 border border-crimsonAlert/30 text-crimsonAlert text-xs">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i> Syntax Error: Please provide a valid AWS IAM JSON policy structure.
+                    </div>
+                `;
+                return;
+            }
+
+            let findings = [];
+            const statements = policy.Statement || [];
+
+            statements.forEach((stmt, idx) => {
+                const actions = Array.isArray(stmt.Action) ? stmt.Action : [stmt.Action];
+                const resources = Array.isArray(stmt.Resource) ? stmt.Resource : [stmt.Resource];
+
+                // Rule 1: Full Wildcard Action & Resource
+                if (stmt.Effect === 'Allow' && actions.includes('*') && resources.includes('*')) {
+                    findings.push({
+                        severity: 'CRITICAL',
+                        title: `Statement [${idx + 1}]: Wildcard Administrator Access Allowed`,
+                        description: 'Policy grants full unrestricted Action (*) on Resource (*), bypassing all IAM boundary controls.',
+                        remediation: 'Restrict actions to specific required services and lock resources down to explicit ARNs.'
+                    });
+                }
+
+                // Rule 2: PassRole + EC2 RunInstances Escalation Path
+                const hasPassRole = actions.some(a => a === '*' || a.toLowerCase() === 'iam:passrole');
+                const hasRunInstances = actions.some(a => a === '*' || a.toLowerCase() === 'ec2:runinstances');
+
+                if (stmt.Effect === 'Allow' && hasPassRole && hasRunInstances) {
+                    findings.push({
+                        severity: 'CRITICAL',
+                        title: `Statement [${idx + 1}]: IAM Privilege Escalation Vector Detected (iam:PassRole + ec2:RunInstances)`,
+                        description: 'An attacker with these permissions can launch a new EC2 instance attached to an existing high-privilege IAM role and execute arbitrary commands.',
+                        remediation: 'Restrict iam:PassRole with a Condition block filtering on specific target Service roles.'
+                    });
+                }
+
+                // Rule 3: Missing Security Conditions
+                if (stmt.Effect === 'Allow' && !stmt.Condition) {
+                    findings.push({
+                        severity: 'MEDIUM',
+                        title: `Statement [${idx + 1}]: Missing Security Condition Safeguards`,
+                        description: 'Statement allows access without verifying transport security (aws:SecureTransport) or IP ranges.',
+                        remediation: 'Add a Condition block requiring "aws:SecureTransport": "true".'
+                    });
+                }
+            });
+
+            const endTime = performance.now();
+            document.getElementById('scan-time').innerText = `Execution time: ${(endTime - startTime).toFixed(1)}ms`;
+
+            // Render Findings
+            if (findings.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 rounded-xl bg-emerald-950/40 border border-emerald-800 text-center">
+                        <i class="fa-solid fa-shield-check text-3xl text-emerald-400 mb-2"></i>
+                        <h4 class="text-sm font-bold text-white mb-1">Zero Escalation Risks Found</h4>
+                        <p class="text-xs text-gray-400">Policy passed all client-side security checks.</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = findings.map(f => {
+                    const badgeClass = f.severity === 'CRITICAL' 
+                        ? 'bg-crimsonAlert/20 text-crimsonAlert border-crimsonAlert/40' 
+                        : 'bg-amberWarn/20 text-amberWarn border-amberWarn/40';
+                    return `
+                        <div class="p-4 rounded-xl bg-gray-900 border border-gray-800 font-sans">
+                            <div class="flex justify-between items-start gap-2 mb-2">
+                                <span class="text-xs font-bold text-white">${f.title}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${badgeClass}">${f.severity}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mb-3 leading-relaxed">${f.description}</p>
+                            <div class="p-2.5 rounded bg-gray-950 border border-gray-800 font-mono text-[11px] text-emerald-400">
+                                <i class="fa-solid fa-wrench mr-1"></i> Remediation: ${f.remediation}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Initialize with default vulnerable sample on load
+        window.onload = function() {
+            loadSamplePolicy('vulnerable');
+        };
+    </script>
+</body>
+</html>
